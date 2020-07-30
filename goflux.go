@@ -45,9 +45,9 @@ type goflux struct {
 
 // New creates a new instance of Goflux
 func New() Goflux {
-	service := service.NewService()
+	service := service.New()
 	kustomize := kustomize.NewService()
-	namespace := namespace.NewService()
+	namespace, := namespace.New()
 	deployment := deployment.NewService()
 	configmap := configmap.NewService()
 	hpa := hpa.NewService()

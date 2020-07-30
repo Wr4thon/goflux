@@ -1,59 +1,64 @@
 package service
 
 import (
-	"github.com/Nerzal/goflux/pkg/files"
+	"github.com/Nerzal/goflux/pkg/k8s/meta/objectmeta"
+	"github.com/Nerzal/goflux/pkg/k8s/meta/typemeta"
 	"github.com/pkg/errors"
+	v1 "k8s.io/api/core/v1"
 )
 
 // Service is a service service, lol
 type Service interface {
-	New(name, namespace string) Data
-	Create(name, namespace, path string) error
+	Create(name, namespace string, option ...func(*v1.Service) error) (v1.Service, error)
 }
 
-type service struct{}
-
-// NewService creates a new instance of Service
-func NewService() Service {
-	return &service{}
+type service struct {
+	typeMeta   typemeta.Service
+	objectMeta objectmeta.Service
 }
 
-func (service *service) New(name, namespace string) Data {
-	data := Data{
-		APIVersion: "v1",
-		Kind:       "Service",
-		Metadata: Metadata{
-			Name:      name,
-			Namespace: namespace,
-			Labels: Labels{
-				App:       namespace,
-				Component: name,
-			},
-		},
-		Spec: Spec{
-			Ports: []Port{
-				{
-					Port:       80,
-					TargetPort: 8080,
-					Protocol:   "TCP",
-				},
-			},
-			Selector: Selector{
-				App:       namespace,
-				Component: name,
-			},
-		},
+// New creates a new instance of Service
+func New(typeMeta typemeta.Service, objectMeta objectmeta.Service) Service {
+	return &service{
+		typeMeta:   typeMeta,
+		objectMeta: objectMeta,
 	}
-
-	return data
 }
 
-func (service *service) Create(name, namespace, path string) error {
-	data := service.New(name, namespace)
-	err := files.WriteFile(data, path+"/service.yaml")
+func (service *service) Create(name, namespace string, options ...func(*v1.Service) error) (v1.Service, error) {
+	typeMeta, err := service.typeMeta.New(typemeta.VersionV1, typemeta.KindNamespace)
+
 	if err != nil {
-		return errors.Wrap(err, "could not create service file")
+		return v1.Service{}, errors.Wrap(err, "error while creating typeMeta")
 	}
 
-	return nil
+	// TODO consts
+	labels := map[string]string{
+		"app":       namespace,
+		"component": name,
+	}
+
+	objectMeta, err := service.objectMeta.New(name,
+		objectmeta.WithNamespace(namespace),
+		objectmeta.WithLabels(labels))
+
+	if err != nil {
+		return v1.Service{}, errors.Wrap(err, "error while creating objectMeta")
+	}
+
+	data := v1.Service{
+		TypeMeta:   typeMeta,
+		ObjectMeta: objectMeta,
+		Spec: v1.ServiceSpec{
+			Selector: labels,
+		},
+	}
+
+	for _, option := range options {
+		if err := option(&data); err != nil {
+			return v1.Service{}, errors.Wrap(err, "error while applying options to service")
+		}
+	}
+
+	return data, nil
 }

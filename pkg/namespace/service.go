@@ -1,9 +1,10 @@
 package namespace
 
 import (
+	"github.com/Nerzal/goflux/pkg/k8s/meta/objectmeta"
+	"github.com/Nerzal/goflux/pkg/k8s/meta/typemeta"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Service provides functionality to create namespace files
@@ -13,12 +14,16 @@ type Service interface {
 }
 
 type service struct {
+	typeMeta    typemeta.Service
+	objectMeta  objectmeta.Service
 	annotations map[string]string
 }
 
-// NewService creates a new instance of service
-func NewService(options ...func(Service) error) (Service, error) {
+// New creates a new instance of service
+func New(typeMeta typemeta.Service, objectMeta objectmeta.Service, options ...func(Service) error) (Service, error) {
 	service := &service{
+		typeMeta:   typeMeta,
+		objectMeta: objectMeta,
 		annotations: map[string]string{
 			"linkerd.io/inject": "enabled",
 		},
@@ -41,15 +46,22 @@ func WithAnnotations(annotations map[string]string) func(Service) error {
 }
 
 func (service *service) Create(name string) (v1.Namespace, error) {
+	typeMeta, err := service.typeMeta.New(typemeta.VersionV1, typemeta.KindNamespace)
+
+	if err != nil {
+		return v1.Namespace{}, errors.Wrap(err, "error while creating typeMeta")
+	}
+
+	objectMeta, err := service.objectMeta.New(name,
+		objectmeta.WithAnnotations(service.getAnnotations()))
+
+	if err != nil {
+		return v1.Namespace{}, errors.Wrap(err, "error while creating objectMeta")
+	}
+
 	data := v1.Namespace{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "Namespace",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        name,
-			Annotations: service.getAnnotations(),
-		},
+		TypeMeta:   typeMeta,
+		ObjectMeta: objectMeta,
 	}
 
 	return data, nil

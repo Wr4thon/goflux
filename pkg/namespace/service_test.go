@@ -3,6 +3,8 @@ package namespace_test
 import (
 	"testing"
 
+	"github.com/Nerzal/goflux/pkg/k8s/meta/objectmeta"
+	"github.com/Nerzal/goflux/pkg/k8s/meta/typemeta"
 	"github.com/Nerzal/goflux/pkg/namespace"
 )
 
@@ -12,8 +14,12 @@ const (
 	annotationValue string = "bar"
 )
 
+func new(opts ...func(namespace.Service) error) (namespace.Service, error) {
+	return namespace.New(typemeta.New(), objectmeta.New(), opts...)
+}
+
 func TestNamespace_Create(t *testing.T) {
-	service, err := namespace.NewService()
+	service, err := new()
 	if err != nil {
 		t.Error(err)
 	}
@@ -35,7 +41,7 @@ func TestNamespace_CreateWithAnnotations(t *testing.T) {
 		annotationKey: annotationValue,
 	}
 
-	service, err := namespace.NewService(namespace.WithAnnotations(expected))
+	service, err := new(namespace.WithAnnotations(expected))
 	if err != nil {
 		t.Error(err)
 	}
@@ -49,7 +55,7 @@ func TestNamespace_CreateWithAnnotations(t *testing.T) {
 	if len(namespaceData.Annotations) != 1 ||
 		namespaceData.Annotations[annotationKey] != annotationValue {
 
-		t.Errorf("Annotations of namespace are incorrect. Actual: '%s', Expected: '%s'",
+		t.Errorf("Annotations of namespace are incorrect. Actual: '%v', Expected: '%v'",
 			namespaceData.Annotations,
 			expected)
 	}
@@ -60,7 +66,7 @@ func TestNamespace_CreateWithAnnotations_MutateAfterSetting(t *testing.T) {
 		annotationKey: annotationValue,
 	}
 
-	service, err := namespace.NewService(namespace.WithAnnotations(annotations))
+	service, err := new(namespace.WithAnnotations(annotations))
 	if err != nil {
 		t.Error(err)
 	}
@@ -76,7 +82,7 @@ func TestNamespace_CreateWithAnnotations_MutateAfterSetting(t *testing.T) {
 	if len(namespaceData.Annotations) != 1 ||
 		namespaceData.Annotations[annotationKey] != annotationValue {
 
-		t.Errorf("Annotations of namespace are incorrect. Actual: '%s', Expected: '%s'",
+		t.Errorf("Annotations of namespace are incorrect. Actual: '%v', Expected: '%v'",
 			namespaceData.Annotations,
 			map[string]string{
 				annotationKey: annotationValue,
