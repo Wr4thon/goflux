@@ -24,3 +24,5 @@ foo
 test
 test/**
 **/goflux
+
+config.yaml
