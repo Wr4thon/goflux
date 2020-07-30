@@ -1,38 +1,74 @@
 package namespace
 
 import (
-	"github.com/Nerzal/goflux/pkg/files"
 	"github.com/pkg/errors"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Service provides functionality to create namespace files
 type Service interface {
-	Create(name string, path string) error
+	Create(name string) (v1.Namespace, error)
+	setAnnotations(annotations map[string]string) error
 }
 
-type service struct{}
+type service struct {
+	annotations map[string]string
+}
 
 // NewService creates a new instance of service
-func NewService() Service {
-	return &service{}
+func NewService(options ...func(Service) error) (Service, error) {
+	service := &service{
+		annotations: map[string]string{
+			"linkerd.io/inject": "enabled",
+		},
+	}
+	for _, option := range options {
+		err := option(service)
+		if err != nil {
+			return nil, errors.Wrap(err, "error while applying option")
+		}
+	}
+
+	return service, nil
 }
 
-func (service *service) Create(name string, path string) error {
-	data := Data{
-		APIVersion: "v1",
-		Kind:       "Namespace",
-		Metadata: Metadata{
-			Name: name,
-			Annotations: Annotations{
-				LinkerdIoInject: "enabled",
-			},
+// WithAnnotations can be used to set Annotations in the namespace
+func WithAnnotations(annotations map[string]string) func(Service) error {
+	return func(s Service) error {
+		return s.setAnnotations(annotations)
+	}
+}
+
+func (service *service) Create(name string) (v1.Namespace, error) {
+	data := v1.Namespace{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "Namespace",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        name,
+			Annotations: service.getAnnotations(),
 		},
 	}
 
-	err := files.WriteFile(data, path+"/namespace.yaml")
-	if err != nil {
-		return errors.Wrap(err, "could not create namespace file")
+	return data, nil
+}
+
+func (service *service) getAnnotations() map[string]string {
+	return mapCopy(service.annotations)
+}
+
+func (service *service) setAnnotations(annotations map[string]string) error {
+	service.annotations = mapCopy(annotations)
+	return nil
+}
+
+func mapCopy(in map[string]string) map[string]string {
+	result := map[string]string{}
+	for k, v := range in {
+		result[k] = v
 	}
 
-	return nil
+	return result
 }
