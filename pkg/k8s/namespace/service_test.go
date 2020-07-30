@@ -5,7 +5,7 @@ import (
 
 	"github.com/Nerzal/goflux/pkg/k8s/meta/objectmeta"
 	"github.com/Nerzal/goflux/pkg/k8s/meta/typemeta"
-	"github.com/Nerzal/goflux/pkg/namespace"
+	"github.com/Nerzal/goflux/pkg/k8s/namespace"
 )
 
 const (

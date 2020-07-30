@@ -5,7 +5,7 @@ import (
 
 	"github.com/Nerzal/goflux/pkg/k8s/meta/objectmeta"
 	"github.com/Nerzal/goflux/pkg/k8s/meta/typemeta"
-	"github.com/Nerzal/goflux/pkg/service"
+	"github.com/Nerzal/goflux/pkg/k8s/service"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
