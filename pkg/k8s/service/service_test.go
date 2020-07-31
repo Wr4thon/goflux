@@ -32,7 +32,7 @@ func TestService_Create_WithPort(t *testing.T) {
 	serviceService := new()
 
 	var port int32 = 80
-	var targetPort int32 = 8080
+	targetPort := 8080
 	protocol := v1.ProtocolTCP
 
 	foo, err := serviceService.Create(name, namespace, service.WithPort(port, targetPort, protocol))
@@ -47,17 +47,15 @@ func TestService_Create_WithPort(t *testing.T) {
 	specPort := foo.Spec.Ports[0]
 
 	if specPort.Port != port ||
-		specPort.TargetPort.IntVal != targetPort ||
+		specPort.TargetPort.IntVal != int32(targetPort) ||
 		specPort.Protocol != protocol {
 
 		t.Errorf("one or more portvalues was not applied. actual: '%v', expected: '%v'",
 			specPort,
 			v1.ServicePort{
-				Protocol: protocol,
-				Port:     port,
-				TargetPort: intstr.IntOrString{
-					IntVal: targetPort,
-				},
+				Protocol:   protocol,
+				Port:       port,
+				TargetPort: intstr.FromInt(targetPort),
 			})
 	}
 }

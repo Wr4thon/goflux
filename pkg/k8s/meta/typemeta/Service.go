@@ -11,6 +11,8 @@ const (
 	VersionAppsV1 Version = "apps/v1"
 	// VersionV1 represents the V1 Version
 	VersionV1 Version = "v1"
+	// NetworkingV1Beta1 represents the networking.k8s.io/v1beta1 Version
+	NetworkingV1Beta1 Version = "networking.k8s.io/v1beta1"
 )
 
 // Kind is a string value representing the REST resource this object represents.
